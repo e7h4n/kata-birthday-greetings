@@ -1,75 +1,8 @@
 jest.mock('nodemailer');
-
-import { readFile } from 'fs/promises';
 import { createTransport } from 'nodemailer';
+import { getTodayBirthdayContacts, loadFromFile, convert, createSendMail, sendBirthdayWish } from '../src/birthday';
+import { main } from '../index'
 
-interface Contact {
-    readonly firstName: string;
-    readonly lastName: string;
-    readonly birthday: Date;
-    readonly email: string;
-}
-
-type SendMail = (subject: string, content: string, to: string) => Promise<boolean>;
-
-async function loadFromFile(filePath: string): Promise<Contact[]> {
-    const fileContent = await readFile(filePath, 'utf-8');
-    const lines = fileContent.split('\n');
-    return lines.filter(l => l.trim().length > 0).slice(1).map(convert);
-}
-
-function convert(line: string): Contact {
-    const items = line.split(',');
-    const dateItems = items[2].trim().split('/').map(x => parseInt(x, 10));
-    return {
-        lastName: items[0].trim(),
-        firstName: items[1].trim(),
-        birthday: new Date(dateItems[0], dateItems[1] - 1, dateItems[2]),
-        email: items[3].trim(),
-    };
-}
-
-function getTodayBirthdayContacts(today: Date, contacts: Contact[]): Contact[] {
-    return contacts.filter(c => {
-        return c.birthday.getDay() == today.getDay() && c.birthday.getMonth() == today.getMonth()
-    })
-}
-
-async function sendBirthdayWish(sendMail: SendMail, contact: Contact): Promise<boolean> {
-    const subject = 'Happy birthday!';
-    const content = `Happy birthday, dear ${contact.firstName}!`;
-    return await sendMail(subject, content, contact.email);
-}
-
-function createSendMail(options: any): SendMail {
-    const transporter = createTransport(options);
-    return (subject, content, to) => {
-        return transporter.sendMail({
-            from: '',
-            to,
-            subject,
-            text: content,
-        });
-    }
-}
-
-async function main(username: string, password: string, csvpath: string): Promise<void> {
-    const sendMail = createSendMail({
-        host: 'smtp.ethereal.email',
-        port: 587,
-        secure: false,
-        auth: {
-            user: username,
-            pass: password,
-        },
-    })
-
-    const contacts = await loadFromFile(csvpath)
-    const sendingContacts = getTodayBirthdayContacts(new Date(), contacts)
-    await Promise.all(sendingContacts.map(async c => {
-        await sendBirthdayWish(sendMail, c)
-    }))
-}
 
 describe('convert', () => {
     it('should convert a csv line to a Contact object', () => {
