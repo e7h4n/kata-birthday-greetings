@@ -1,0 +1,13 @@
+{
+  "name": "kata-birthday-greetings",
+  "version": "1.0.0",
+  "main": "index.js",
+  "author": "zhangyc <zhangyc@yuanfudao.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "@babel/preset-env": "^7.16.5",
+    "@babel/preset-typescript": "^7.16.5",
+    "@types/jest": "^27.0.3",
+    "jest": "^27.4.5"
+  }
+}
