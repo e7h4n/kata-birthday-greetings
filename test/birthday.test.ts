@@ -24,6 +24,12 @@ function convert(line: string): Contact {
     };
 }
 
+function getTodayBirthdayContacts(today: Date, contacts: Contact[]): Contact[] {
+    return contacts.filter(c => {
+        return c.birthday.getDay() == today.getDay() && c.birthday.getMonth() == today.getMonth()
+    })
+}
+
 describe('convert', () => {
     it('should convert a csv line to a Contact object', () => {
         const contact = convert('Doe, John, 1982/10/08, john.doe@foobar.com');
@@ -45,3 +51,41 @@ describe('loadFromFile', () => {
         expect(contacts).toHaveLength(2);
     });
 });
+
+describe("getTodayBirthdayContacts", () => {
+    it('should return todaty contacts', () => {
+        const contacts: Contact[] = [
+            {
+                firstName: 'John1',
+                lastName: 'Doe',
+                birthday: new Date(1983, 9, 9),
+                email: 'john.doe@foobar.com',
+            },
+            {
+                firstName: 'John2',
+                lastName: 'Doe',
+                birthday: new Date(1984, 9, 10),
+                email: 'john.doe@foobar.com',
+            },
+            {
+                firstName: 'John3',
+                lastName: 'Doe',
+                birthday: new Date(1985, 8, 11),
+                email: 'john.doe@foobar.com',
+            },
+            {
+                firstName: 'John4',
+                lastName: 'Doe',
+                birthday: new Date(1985, 8, 11),
+                email: 'john.doe@foobar.com',
+            }
+        ]
+
+        const today = new Date(1985, 8, 11);
+
+        const resContacts = getTodayBirthdayContacts(today, contacts)
+        expect(resContacts).toHaveLength(2)
+    })
+})
+
+
