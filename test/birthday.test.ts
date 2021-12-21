@@ -52,6 +52,25 @@ function createSendMail(options: any): SendMail {
         });
     }
 }
+
+async function main(username: string, password: string, csvpath: string): Promise<void> {
+    const sendMail = createSendMail({
+        host: 'smtp.ethereal.email',
+        port: 587,
+        secure: false,
+        auth: {
+            user: username,
+            pass: password,
+        },
+    })
+
+    const contacts = await loadFromFile(csvpath)
+    const sendingContacts = getTodayBirthdayContacts(new Date(), contacts)
+    await Promise.all(sendingContacts.map(async c => {
+        await sendBirthdayWish(sendMail, c)
+    }))
+}
+
 describe('convert', () => {
     it('should convert a csv line to a Contact object', () => {
         const contact = convert('Doe, John, 1982/10/08, john.doe@foobar.com');
@@ -130,17 +149,24 @@ describe('sendBirthdayWish', () => {
     });
 });
 
-describe('createSendMail', () => {
-    const createTransportMock = createTransport as jest.Mock<typeof createTransport>;
-    const sendMailMock = jest.fn();
-    createTransportMock.mockReturnValue({
-        sendMail: sendMailMock,
-    });
 
-    afterEach(() => {
-        createTransportMock.mockClear();
-        sendMailMock.mockClear();
-    });
+
+const createTransportMock = createTransport as jest.Mock<typeof createTransport>;
+const sendMailMock = jest.fn();
+createTransportMock.mockReturnValue({
+    sendMail: sendMailMock,
+});
+
+beforeEach(() => {
+    jest.clearAllMocks()
+})
+
+afterEach(() => {
+    createTransportMock.mockClear();
+    sendMailMock.mockClear();
+});
+
+describe('createSendMail', () => {
 
     it('should create a SendMail function by smtp account info', () => {
         const sendMail = createSendMail({
@@ -166,7 +192,7 @@ describe('createSendMail', () => {
     });
 
     it('should create a SendMail function which calls nodemailer sendMail function', () => {
-        const sendMail = createSendMail();
+        const sendMail = createSendMail({});
         sendMail('subject', 'content', 'foo.bar@gmail.com');
 
         expect(sendMailMock.mock.calls).toHaveLength(1);
@@ -177,3 +203,20 @@ describe('createSendMail', () => {
         });
     });
 });
+
+describe('main', () => {
+    it('should send mail with username/password and csv', async () => {
+
+        const username = 'foo'
+        const password = 'bar'
+        const csvpath = 'test/fixtures/birthday.csv'
+
+        jest.useFakeTimers().setSystemTime(new Date(2021, 9, 8).getTime())
+
+        await main(username, password, csvpath)
+
+        expect(sendMailMock).toHaveBeenCalledWith({from: '', subject: 'Happy birthday!',
+        text: 'Happy birthday, dear John!',
+        to: 'john.doe@foobar.com'})
+    })
+})
