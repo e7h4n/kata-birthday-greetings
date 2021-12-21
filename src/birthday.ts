@@ -1,7 +1,7 @@
 import { readFile } from 'fs/promises';
 import { createTransport } from 'nodemailer';
 
-interface Contact {
+export interface Contact {
     readonly firstName: string;
     readonly lastName: string;
     readonly birthday: Date;

@@ -1,6 +1,6 @@
 jest.mock('nodemailer');
 import { createTransport } from 'nodemailer';
-import { getTodayBirthdayContacts, loadFromFile, convert, createSendMail, sendBirthdayWish } from '../src/birthday';
+import { Contact, getTodayBirthdayContacts, loadFromFile, convert, createSendMail, sendBirthdayWish } from '../src/birthday';
 import { main } from '../index'
 
 
@@ -84,11 +84,11 @@ describe('sendBirthdayWish', () => {
 
 
 
-const createTransportMock = createTransport as jest.Mock<typeof createTransport>;
+const createTransportMock = createTransport as jest.MockedFunction<typeof createTransport>;
 const sendMailMock = jest.fn();
 createTransportMock.mockReturnValue({
     sendMail: sendMailMock,
-});
+} as any);
 
 beforeEach(() => {
     jest.clearAllMocks()
