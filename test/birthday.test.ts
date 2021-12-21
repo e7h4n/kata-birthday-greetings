@@ -1,4 +1,7 @@
+jest.mock('nodemailer');
+
 import { readFile } from 'fs/promises';
+import { createTransport } from 'nodemailer';
 
 interface Contact {
     readonly firstName: string;
@@ -6,6 +9,8 @@ interface Contact {
     readonly birthday: Date;
     readonly email: string;
 }
+
+type SendMail = (subject: string, content: string, to: string) => Promise<boolean>;
 
 async function loadFromFile(filePath: string): Promise<Contact[]> {
     const fileContent = await readFile(filePath, 'utf-8');
@@ -30,6 +35,23 @@ function getTodayBirthdayContacts(today: Date, contacts: Contact[]): Contact[] {
     })
 }
 
+async function sendBirthdayWish(sendMail: SendMail, contact: Contact): Promise<boolean> {
+    const subject = 'Happy birthday!';
+    const content = `Happy birthday, dear ${contact.firstName}!`;
+    return await sendMail(subject, content, contact.email);
+}
+
+function createSendMail(options: any): SendMail {
+    const transporter = createTransport(options);
+    return (subject, content, to) => {
+        return transporter.sendMail({
+            from: '',
+            to,
+            subject,
+            text: content,
+        });
+    }
+}
 describe('convert', () => {
     it('should convert a csv line to a Contact object', () => {
         const contact = convert('Doe, John, 1982/10/08, john.doe@foobar.com');
@@ -88,4 +110,70 @@ describe("getTodayBirthdayContacts", () => {
     })
 })
 
+describe('sendBirthdayWish', () => {
+    it('should call node-sendmail correctly', async () => {
+        const sendMail = jest.fn();
 
+        await sendBirthdayWish(sendMail, {
+            firstName: 'John4',
+            lastName: 'Doe',
+            birthday: new Date(1985, 8, 11),
+            email: 'john.doe@foobar.com',
+        });
+
+        expect(sendMail.mock.calls).toHaveLength(1);
+        expect(sendMail.mock.calls[0]).toMatchObject([
+            'Happy birthday!',
+            'Happy birthday, dear John4!',
+            'john.doe@foobar.com',
+        ]);
+    });
+});
+
+describe('createSendMail', () => {
+    const createTransportMock = createTransport as jest.Mock<typeof createTransport>;
+    const sendMailMock = jest.fn();
+    createTransportMock.mockReturnValue({
+        sendMail: sendMailMock,
+    });
+
+    afterEach(() => {
+        createTransportMock.mockClear();
+        sendMailMock.mockClear();
+    });
+
+    it('should create a SendMail function by smtp account info', () => {
+        const sendMail = createSendMail({
+            host: 'smtp.ethereal.email',
+            port: 587,
+            secure: false,
+            auth: {
+                user: 'foo',
+                pass: 'foopass',
+            },
+        });
+
+        expect(createTransportMock.mock.calls).toHaveLength(1);
+        expect(createTransportMock.mock.calls[0][0]).toMatchObject({
+            host: 'smtp.ethereal.email',
+            port: 587,
+            secure: false,
+            auth: {
+                user: 'foo',
+                pass: 'foopass',
+            },
+        });
+    });
+
+    it('should create a SendMail function which calls nodemailer sendMail function', () => {
+        const sendMail = createSendMail();
+        sendMail('subject', 'content', 'foo.bar@gmail.com');
+
+        expect(sendMailMock.mock.calls).toHaveLength(1);
+        expect(sendMailMock.mock.calls[0][0]).toMatchObject({
+            subject: 'subject',
+            text: 'content',
+            to: 'foo.bar@gmail.com',
+        });
+    });
+});

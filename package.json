@@ -8,6 +8,10 @@
     "@babel/preset-env": "^7.16.5",
     "@babel/preset-typescript": "^7.16.5",
     "@types/jest": "^27.0.3",
+    "@types/nodemailer": "^6.4.4",
     "jest": "^27.4.5"
+  },
+  "dependencies": {
+    "nodemailer": "^6.7.2"
   }
 }
