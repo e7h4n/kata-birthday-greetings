@@ -29,7 +29,7 @@ export function convert(line: string): Contact {
 
 export function getTodayBirthdayContacts(today: Date, contacts: Contact[]): Contact[] {
     return contacts.filter(c => {
-        return c.birthday.getDay() == today.getDay() && c.birthday.getMonth() == today.getMonth()
+        return c.birthday.getDate() == today.getDate() && c.birthday.getMonth() == today.getMonth()
     })
 }
 
@@ -43,7 +43,7 @@ export function createSendMail(options: any): SendMail {
     const transporter = createTransport(options);
     return async (subject, content, to) => {
         await transporter.sendMail({
-            from: '',
+            from: options.auth.user,
             to,
             subject,
             text: content,
